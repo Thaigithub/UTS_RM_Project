@@ -1,0 +1,203 @@
+\section{Methodology}
+\subsection{General assumptions and Risk factor mapping}
+\subsubsection{General assumptions}
+Our total portfolio consists of the following assets:
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|c|c|c|c|c|}
+    \hline
+    Portfolio & Asset & Underlying stock& Position & Strike \\
+    \hline
+    \multirow{3}{*}{Butterfly spread} & Call option & CBA & 1 & 80\\ \cline{2-5}
+                             & Call option & CBA & 1 & 110 \\ \cline{2-5}
+                              & Call option & CBA & -2 & 100 \\
+    \hline
+    \multirow{2}{*}{Strangle} & Put option & MQG & 1 & 150\\ \cline{2-5}
+                             & Call option & MQG & 1 & 220 \\ 
+    \hline
+    \end{tabular}
+    \caption{Portfolio assets}
+    \label{tab:Portfolio assets}
+\end{table}
+
+With the data given only containing the price of the CBA stock and the MQG stock, we do not have the data on the term structure, which can potentially become a risk factor attributed to the portfolio. Since then, we need to have the assumption that the term structure is fixed from the day we enter to maturity of the portfolio.
+
+The maturity of all assets in the portfolio is 6 months after we enter. Hence, we assume that the day counting convention is 30/360 for the time to maturity, which makes the time to maturity 0.5 years. According to the requirement of the project, 250 trading days are used to assume annualization of measurements, which consist of the volatility of the log-return and the mean of the log-return.
+
+In order to estimate the volatility of the stock, equal weights will be used to facilitate the methods of estimating. However, there will be drawbacks to this method, which will ignore the more important recent volatility compared to the historical volatility (which can be held if using the EWMA methods).
+
+As most of the estimation from the historical data will be conducted equally, it is assumed that every situation in the past may have equal probability to happen again in the future.
+\subsubsection{Valuation}
+Let denote the value of each option as a matrix $\mathbf{P}$:
+$$
+\mathbf{P}_t= \begin{bmatrix} V_{Call_{80}}(t, S_{CBA}) \\  V_{Call_{100}}(t, S_{CBA})\\ V_{Call_{110}}(t, S_{CBA}) \\ V_{Put_{150}}(t, S_{MQG}) \\  V_{Call_{220}}(t, S_{MQG})\end{bmatrix}
+$$
+Depending on the portfolio that we are considering, we are going to have the value of that portfolio depend on the positions that portfolio is going to take on each option above. Then
+\begin{align*}
+    V_{total}(t) &= \omega_{total}^T \cdot \mathbf{P}_t \\
+    V_{butterfly}(t) &= \omega_{butterfly}^T \cdot \mathbf{P}_t \\
+    V_{strangle}(t) &= \omega_{strangle}^T \cdot \mathbf{P}_t \\
+\end{align*}
+$$
+    \omega_{total} = \begin{bmatrix}1\\ -2\\ 1\\ 1\\ 1\end{bmatrix} \quad \omega_{butterfly} = \begin{bmatrix}1\\ -2\\ 1\\ 0\\ 0\end{bmatrix} \quad \omega_{strangle} =\begin{bmatrix}0\\ 0\\ 0\\ 1\\ 1\end{bmatrix}
+$$
+Assume that the underlying assets follow the log-normal distribution under the risk-neutral measure, then, we have the price of the options follow the Black-Scholes formula:
+\begin{align*}
+    V_{Call_K}(t,S)&=S(t)\Phi(d_1)+e^{-rT}K\Phi(d_2)\\
+    V_{Put_K}(t,S)&=e^{-rT}K\Phi(-d_2)-S(t)\Phi(-d_1)\\
+    d_{1,2}&=\frac{\log\left(\frac{S(t)}{K}\right)+(r\pm\frac{1}{2}\sigma^2)T}{\sqrt{\sigma^2T}}
+\end{align*}
+\subsubsection{Risk factor mapping}
+According to the assignment, we have the log price of the asset as the risk factors. Since then, we denote the risk factor vectors:
+$$
+\mathbf{Z}_t := \begin{bmatrix} Z_{1,t} \\  Z_{2,t}  \end{bmatrix}=\begin{bmatrix} \log S_{CBA,t} \\ \log S_{MQG,t}  \end{bmatrix}
+\quad
+\mathbf{X}_{t+1}:=\mathbf{Z}_{t+1}-\mathbf{Z}_t=\begin{bmatrix} \log S_{CBA,t+1}- \log S_{CBA,t} \\ \log S_{MQG,t+1}-\log S_{MQG,t}  \end{bmatrix}=\begin{bmatrix} \log \frac{S_{CBA,t+1}}{S_{CBA,t}} \\ \log \frac{S_{MQG,t+1}}{S_{MQG,t}}   \end{bmatrix}
+$$
+Then:
+\[
+\mathbf{P}(t) =\begin{bmatrix} V_{Call_{80}}(t, e^{Z_{1,t}}) \\  V_{Call_{100}}(t, e^{Z_{1,t}})\\ V_{Call_{110}}(t, e^{Z_{1,t}}) \\ V_{Put_{150}}(t, e^{Z_{2,t}}) \\  V_{Call_{220}}(t, e^{Z_{2,t}})\end{bmatrix}\\
+\]
+So:
+\[
+V_{port}(t)= \omega_{port}^T \cdot \mathbf{P}(t) \text{ with $port \in \{total, butterfly, strangle\}$}\\
+\]
+
+\subsubsubsection{Delta approximation}
+
+We have:
+\begin{align*}
+    L_{port}^\Delta(t+1)&=-(V_{port}(t+1)-V_{port}(t)) \\
+    &=-\omega_{port}^T\cdot(\mathbf{P}(t+1)-\mathbf{P}(t))\\
+    &=\omega_{port}^T\cdot\begin{bmatrix}L_{Call_{80}}^\Delta(t+1) \\  L_{Call_{100}}^\Delta(t+1)\\ L_{Call_{110}}^\Delta(t+1) \\ L_{Put_{150}}^\Delta(t+1) \\  L_{Call_{220}}^\Delta(t+1)\end{bmatrix}
+\end{align*}
+On the other hand:
+\begin{align*}
+    L_{Call}^\Delta(t+1)&=-(\frac{\partial V_{Call}}{\partial Z}X_{t+1}) \\
+    &=-\Delta_{Call} S(t) X_{t+1}\\
+    L_{Put}^\Delta(t+1)&=-(\frac{\partial V_{Put}}{\partial Z}X_{t+1}) \\
+    &=-\Delta_{Put} S(t) X_{t+1}\\
+    \Delta_{Expose}&=\begin{bmatrix}
+        \Delta_{Call_{80}}S_{CBA}(t) & 0\\
+        \Delta_{Call_{100}}S_{CBA}(t) & 0\\
+        \Delta_{Call_{110}}S_{CBA}(t) & 0\\
+        0 & \Delta_{Put_{150}}S_{MQG}(t)\\
+       0 & \Delta_{Call_{220}}S_{MQG}(t)
+    \end{bmatrix}\\
+    \Longrightarrow \begin{bmatrix}L_{Call_{80}}^\Delta(t+1) \\  L_{Call_{100}}^\Delta(t+1)\\ L_{Call_{110}}^\Delta(t+1) \\ L_{Put_{150}}^\Delta(t+1) \\  L_{Call_{220}}^\Delta(t+1)\end{bmatrix}&=-\Delta_{Expose}\cdot \mathbf{X}_{t+1}
+\end{align*}
+\subsubsubsection{Delta-gamma approximation}
+
+We have:
+\begin{align*}
+    L_{port}^\Gamma(t+1)&=-(V_{port}(t+1)-V_{port}(t)) \\
+    &=-\omega_{port}^T\cdot(\mathbf{P}(t+1)-\mathbf{P}(t))\\
+    &=\omega_{port}^T\begin{bmatrix}L_{Call_{80}}^\Gamma(t+1) \\  L_{Call_{100}}^\Gamma(t+1)\\ L_{Call_{110}}^\Gamma(t+1) \\ L_{Put_{150}}^\Gamma(t+1) \\  L_{Call_{220}}^\Gamma(t+1)\end{bmatrix}
+\end{align*}
+On the other hand:
+\begin{align*}
+    L_{Call}^\Gamma(t+1)&=-(\frac{\partial V_{Call}}{\partial Z}X_{i,t+1})-\frac{1}{2}(\frac{\partial^2 V_{Call}}{\partial Z^2}X_{i,t+1}^2) \\
+    &=-\Delta_{Call} S(t) X_{t+1}-\frac{1}{2}(\Gamma_{Call}S(t)^2+\Delta_{Call} S(t)) X_{t+1}^2\\
+    L_{Put_i}^\Gamma(t+1)&=-(\frac{\partial V_{Put}}{\partial Z_1}X_{i,t+1})-\frac{1}{2}(\frac{\partial^2 V_{Put}}{\partial Z^2}X_{i,t+1}^2) \\
+    &=-\Delta_{Put} S(t) X_{t+1}-\frac{1}{2}(\Gamma_{Put}S(t)^2+\Delta_{Put} S(t)) X_{t+1}^2\\
+    \Gamma_{Expose}&=\begin{bmatrix}
+        \Gamma_{Call_{80}}S_{CBA}^2(t)& 0\\
+        \Gamma_{Call_{100}}S_{CBA}^2(t)& 0\\
+        \Gamma_{Call_{110}}S_{CBA}^2(t)& 0\\
+        0 & \Gamma_{Put_{150}}S_{MQG}^2(t)\\
+       0 & \Gamma_{Call_{220}}S_{MQG}^2(t)
+    \end{bmatrix}
+\end{align*}
+\[
+    \Longrightarrow \begin{bmatrix}L_{Call_{80}}^\Gamma(t+1) \\  L_{Call_{100}}^\Gamma(t+1)\\ L_{Call_{110}}^\Gamma(t+1) \\ L_{Put_{150}}^\Gamma(t+1) \\  L_{Call_{220}}^\Gamma(t+1)\end{bmatrix}=-\left[\Delta_{Expose}\cdot \mathbf{X}_{t+1}+\frac{1}{2}\left(\Delta_{Expose}+\Gamma_{Expose}\right)\cdot\mathbf{X}_{t+1}^2\right]
+\]
+\subsubsection{Exposure and sensitivity to risk factor change}
+With the derivation above, we can see that the delta-gamma approximation is just having an additional gamma approximation in the exposure. Then, we can calculate the delta-gamma approximation directly and use the delta approximation only when approaching with the delta approximation approach. After performing the calculation, we got the matrix of exposure as follows:
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|r|r|r|r|}
+\hline
+ & \textbf{CBA Delta} & \textbf{MQG Delta} & \textbf{CBA Gamma} & \textbf{MQG Gamma} \\ \hline
+\textbf{Total Portfolio} & -12.34321 & -12.408058 & 101.607465 & -234.808803 \\
+\textbf{Butterfly Portfolio} & -12.34321 & 0.000000 & 101.607465 & 0.000000 \\
+\textbf{Strangel Portfolio} & 0.00000 & -12.408058 & 0.000000 & -234.808803 \\
+\hline
+\end{tabular}
+\caption{Portfolio Deltas and Gammas}
+\label{table:portfolio_deltas_gammas}
+\end{table}
+From the table, we can see that:
+\begin{itemize}
+    \item The bigger the risk factor, the less loss in portfolios in delta approximation
+    \item The further from zero, the more loss in portfolio contains CBA stock in gamma approximation, the less loss in portfolio contains MQG stock in gamma approximation.
+\end{itemize}
+\subsubsection{Adjustment and assumption for time scaling problems}
+The problem of time scaling arises when it is required to estimate the Value at Risk and Expected Shortfall for the number of days greater than 1. The reason for the scaling is that without scaling, there won't be enough data for the estimation. In order to perform the scaling, we assume that daily risk factors during those days are iid. 
+\[
+\mathbf{X}_{t+1},\mathbf{X}_{t+2}, \cdots ,\mathbf{X}_{t+n}\sim\mathbf{N}(\mu,\Sigma)
+\]
+Then:
+\begin{align*}
+    X_{n_{day}}&\sim\mathbf{N}(n\mu, n\Sigma)\\
+    L_{n_{day}}&=b^T\cdot X_{n_{day}}\\
+    \Longrightarrow L_{n_{day}}&\sim\mathbf{N}(n b^T\cdot\mu, n b^T\cdot\Sigma)\\
+    \Longrightarrow VaR_\alpha(L_{n_{day}})&=n b^T\cdot\mu+\sqrt{n b^T\cdot\Sigma}\Phi^{-1}(\alpha)\\
+    \Longrightarrow ES_\alpha(L_{n_{day}})&=n b^T\cdot\mu+\sqrt{n b^T\cdot\Sigma}\frac{\phi(\Phi^{-1}(\alpha))}{1-\alpha}
+\end{align*}
+However, the above assumptions might not hold in practice and with the given data. Moreover, in method 5, the risk factors are assumed to come from a t-Copula, which makes the above assumption not applicable due to the fact that sum of Student-t distribution is not a Student-t distribution.
+
+Since then, a suggested method to solve this problem is to measure the risk factor of n days directly instead of scaling the result from the daily data. There are two methods to measure it:
+\begin{itemize}
+    \item Perform the overlapping (rolling window) sum over n days: By doing this, we can measure the risk factor of 10 day without the normal assumption. Furthermore, the number of historical data still good enough for performing the risk measuring. However, there will be a noticing correlation in time series data due to this practice.
+    \item Perform the non-overlapping sum of n days: By doing this, the correlation in time series data can be reduced. However, it would lead to the decrease in the number of data, which may lead to the false in measuring the risk.
+\end{itemize}
+In this assignments, three above methods will all be performed for method 1, 4 and 5 due to the need of assumptions on the distribution of the risk factor. The results of each methods will be discussed in the results section.
+\subsection{Method explanation and additional assumption}
+\subsubsection{Method 1: Delta-normal approach}
+In this method, it assumes that the risk factor are normally distributed with the mean and the volatility is measured through historical data. Depends on the method that is used for measuring risk at 10 days if it is needed, the historical of risk factor data will be gathered differently. Assume that after gathering and measuring, we have:
+\begin{align*}
+    \mathbf{X}&\sim\mathbf{N}(\mu,\Sigma)\\
+    \Longrightarrow L_{port}^\Delta&=\omega_{port}^T\cdot(-\Delta_{Expose})\cdot \mathbf{X}\sim\mathbf{N}(\omega_{port}^T\cdot(-\Delta_{Expose})\cdot\mu,\omega_{port}^T\cdot(-\Delta_{Expose})\cdot\Sigma)\\
+    \Longrightarrow VaR_\alpha(L_{n_{day}})&=\omega_{port}^T\cdot(-\Delta_{Expose})\cdot\mu+\sqrt{\omega_{port}^T\cdot(-\Delta_{Expose})\cdot\Sigma}\Phi^{-1}(\alpha)\\
+    \Longrightarrow ES_\alpha(L_{n_{day}})&=\omega_{port}^T\cdot(-\Delta_{Expose})\cdot\mu+\sqrt{\omega_{port}^T\cdot(-\Delta_{Expose})\cdot\Sigma}\frac{\phi(\Phi^{-1}(\alpha))}{1-\alpha}
+\end{align*}
+\subsubsection{Method 2: Historical simulation approach with delta-gamma approximation}
+With this method, it will require to gather the historical data of risk factor to compute the loss of the portfolio by using the current exposure of the portfolio with the delta gamma approach. At the end, we will have a simulation of loss from historical values of the risk factor.
+\[
+L^\Gamma=-\omega^T\cdot\left[\Delta_{Expose}\cdot \mathbf{X}+\frac{1}{2}\left(\Delta_{Expose}+\Gamma_{Expose}\right)\cdot\mathbf{X}^2\right]
+\]
+As we assume that the weight of each loss is equal (or the probability of each historical risk factor values happening in the future is the same), the Value at Risk and Expected Shortfall are measured with emprical method as:
+\begin{align*}
+    VaR_\alpha(L)&=inf\{l \in \mathbf{R}:P(L>l)\leq1-\alpha\}\\
+    ES_\alpha(L)&=\frac{1}{1-\alpha}\mathbf{E}\left[(L-VaR_\alpha(L))^+\right]+VaR_\alpha(L)
+\end{align*}
+The simulation of the loss will be increasingly sorted. The weight of each simulation is \[
+\omega_j=\frac{1}{n_{Loss}}
+\]
+\subsubsection{Method 3: Weighted historical simulation approach with delta-gamma approximation}
+This method is as same as method 2, except for the assumption that each loss simulation does not have the same weight. A decay weight will be applied for the probability of each simulation happens again in the future. In this method, the assumption is that the further the simulation value in the past, the less likely it appears in the future (lower weight compared to the more recent value).
+\[
+\omega_j=\frac{\lambda^{j-1}(1-\lambda)}{1-\lambda^{n_{loss}}}
+\]
+With \(\lambda\) is the decay factor. The decay factor is chose to be \(0.94\). By using this factor, the weight of the more recent value of risk factor simulation is higher.
+\subsubsection{Method 4: Monte Carlo simulation approach with delta-gamma approximation with log-return jointly Gaussian distributed}
+According to the name of the method, we assume that:
+\[
+\mathbf{X}_{t+n}=\begin{bmatrix} \log \frac{S_{CBA,t+n}}{S_{CBA,t}} \\ \log \frac{S_{MQG,t+1}}{S_{MQG,t}}  \end{bmatrix}\sim\mathbf{N}(\mu, \Sigma)
+\]
+Since then, we just need to measure the \(\mu\) and \(\Sigma\) from the data which is gathered based on the method that is used. After that, we can plug it into the normal generator with the mean and the variance we gather from the data to create Monte Carlo simulations of \(\mathbf{X}\). At the end, we can have the simulation of loss calculated from the simulation of risk factors.
+\[
+L^\Gamma=-\omega^T\cdot\left[\Delta_{Expose}\cdot \mathbf{X}+\frac{1}{2}\left(\Delta_{Expose}+\Gamma_{Expose}\right)\cdot\mathbf{X}^2\right]
+\]
+\subsubsection{Method 5: Monte Carlo simulation approach with a delta-gamma approximation with log-return jointly Student's t copula distributed}
+According to the name of the method, we assume that:
+\[
+t=\frac{\mathbf{X}_{t+n}-\mu}{\Sigma}\sim t_\nu(\rho,df)
+\]
+Since then, we just need to measure the \(\mu\) and \(\Sigma\) from the data which is gathered based on the method that is used. After that, we perform the standardization to get the historical value of \(t\). Then, by using pycop, the appropriate correlation and degree of freedom can be measured from the calculated historical data by using the maximum likelihood estimation. From then, we can use the pycop.simulation to generate the value of cdf. From then, we can use the quantile function of t with the estimated correlation and degree of freedom to get the t values. From then, the risk factor can be calculated from the simulation and so does the loss.
+\[
+\mathbf{X}_{t+n}=\mu+\Sigma t_\nu^{-1}(\rho, df, u)
+\]
+\[
+L^\Gamma=-\omega^T\cdot\left[\Delta_{Expose}\cdot \mathbf{X}+\frac{1}{2}\left(\Delta_{Expose}+\Gamma_{Expose}\right)\cdot\mathbf{X}^2\right]
+\]
